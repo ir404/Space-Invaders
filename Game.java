@@ -1,26 +1,15 @@
 import javafx.application.*;
 import javafx.stage.*;
 import javafx.scene.*;
-import javafx.event.* ;
 import javafx.scene.control.* ;
 import javafx.scene.layout.* ;
-import javafx.scene.Group ;
-import javafx.scene.shape.*;
-import javafx.scene.paint.*;
 import javafx.scene.input.* ;
 import javafx.scene.image.* ;
-import javafx.scene.text.* ;
 import javafx.animation.* ;
 import javafx.util.* ;
 import javafx.geometry.* ;
-import javafx.beans.property.* ;
-import javafx.beans.value.* ;
-import javafx.beans.binding.* ;
 import java.util.* ;
 import java.io.* ;
-
-// javac --module-path "%PATH_TO_FX%" --add-modules javafx.controls Game.java
-// java --module-path "%PATH_TO_FX%" --add-modules javafx.controls Game
 
 public class Game extends Application
 {
@@ -38,30 +27,28 @@ public class Game extends Application
 	protected long movePeriod ;
 	protected int score, rowToMove, enemyCount, highScore ;
 	protected boolean paused, gameOver ;
-	protected Stage window ;
 	protected Scene scene ;
 	protected Pane root ;
 	protected Label scoreLabel, highScoreLabel, healthLabel ;
 	protected Timeline timeline ;
 	protected KeyFrame keyFrame ;
-	protected ImageView playerImage, enemy1_img, enemy2_img ;
+	protected ImageView playerImage;
 
 	protected Spaceship player, bonusSpaceship ;
 
 	protected Timer moveTimer, enemyFireTimer, playerFireTimer, bonusSpawnTimer ;
 	protected TimerTask moveTask, enemyFireTask, playerFireTask, bonusSpawnTask ;
 
-	protected ArrayList<Laser> laserList = new ArrayList<Laser>() ;
-    protected Spaceship enemies[][] = new Spaceship [MAX_ROW][MAX_COL] ;
-	protected ConfirmationBox confirmationBox = new ConfirmationBox() ;
+	protected ArrayList<Laser> laserList = new ArrayList<>() ;
+    protected Spaceship[][] enemies = new Spaceship [MAX_ROW][MAX_COL] ;
 	private Controller controller ;
 
     enum Dir
     {
-    	LEFT, RIGHT ;
+    	LEFT, RIGHT
     }
-    protected Dir dir ;		// indicates the direction the enemy spaceships are to move
-    protected Dir bonusDir ;	// indicates the direction the bonus spaceship is to move
+    private Dir dir ;		// indicates the direction the enemy spaceships are to move
+    private Dir bonusDir ;	// indicates the direction the bonus spaceship is to move
 
 
 	public static void main(String[] args) 
@@ -73,52 +60,17 @@ public class Game extends Application
 	@Override
 	public void start(Stage primaryStage)
 	{
-		window = primaryStage ;
-		window.setTitle("S P A C E   I N V A D E R S") ;
-		window.setResizable(false) ;
+		VBox uiElementsVbox ;
 
 		root = new Pane() ;
 		root.setPrefWidth(MAP_WIDTH) ;
 		root.setPrefHeight(MAP_HEIGHT) ;
-		root.setStyle("-fx-background-color: black") ;		
-
-		playerImage = new ImageView(new Image("file:Player.png")) ;
-		playerImage.setFitWidth(IMAGE_WIDTH) ;
-		playerImage.setFitHeight(IMAGE_HEIGHT) ;
-		playerImage.setCache(true) ;
+		root.setStyle("-fx-background-color: black") ;
 
 		score = 0 ;
 		highScore = getHighScore() ;
 
-		playerFireCount = 0 ;
-
-		player = new Spaceship(playerImage, 250, (MAP_HEIGHT - IMAGE_HEIGHT), root) ;
-		player.setName("PLAYER") ;
-		player.setHealth(5) ;
-		
-		scoreLabel = new Label("Your Score: " + Integer.toString(score)) ;
-		scoreLabel.setPrefHeight(20) ;
-		scoreLabel.setStyle("-fx-text-fill : white ;" +
-							"-fx-font-size : 11pt ;") ;
-
-		highScoreLabel = new Label("High Score: " + Integer.toString(highScore)) ;
-		highScoreLabel.setPrefHeight(20) ;
-		highScoreLabel.setStyle("-fx-text-fill : white ;" +
-							"-fx-font-size : 11pt ;") ;
-
-		HBox hbox = new HBox(250) ;
-		hbox.setStyle("-fx-background-color : black") ;
-		hbox.getChildren().addAll(scoreLabel, highScoreLabel) ;
-
-		healthLabel = new Label("Health: " + Integer.toString(player.getHealth())) ;
-		healthLabel.setStyle("-fx-background-color : black ;" +
-							 "-fx-border-color : darkgray ;" +
-							 "-fx-text-fill : white ;" +
-							 "-fx-font-size : 11pt ;") ;
-		healthLabel.setPrefWidth(MAP_WIDTH) ;
-
-		VBox vbox = new VBox() ;
-		vbox.getChildren().addAll(hbox, root, healthLabel) ;
+		initialisePlayer();
 
 		spawnEnemy() ;
 
@@ -127,7 +79,7 @@ public class Game extends Application
 		movePeriod = 240 ;
 
 		moveTimer = new Timer() ;
-		moveTimer.scheduleAtFixedRate(moveTask, (long)(0), movePeriod) ;	// executes task after a delay of 0 seconds and repeats every "movePeriod" milliseconds
+		moveTimer.scheduleAtFixedRate(moveTask, 0, movePeriod) ;	// executes task after a delay of 0 seconds and repeats every "movePeriod" milliseconds
 		
 		enemyFireTimer = new Timer() ;
 		enemyFireTimer.scheduleAtFixedRate(enemyFireTask, 0, (long)(1000*1.5)) ;		// executes every 1.5 seconds - enemies fire every 2 seconds
@@ -136,14 +88,16 @@ public class Game extends Application
 		playerFireTimer.scheduleAtFixedRate(playerFireTask, 0, (long)(1000*0.5)) ; 		// executes every half second
 
 		bonusSpawnTimer = new Timer() ;
-		bonusSpawnTimer.scheduleAtFixedRate(bonusSpawnTask, (long)(1000*5), (long)(1000*15)) ;
+		bonusSpawnTimer.scheduleAtFixedRate(bonusSpawnTask, 1000*5, 1000*15) ;
 
-		scene = new Scene(vbox) ;
+		uiElementsVbox = initialiseGUIElements();
+
+		scene = new Scene(uiElementsVbox) ;
 		scene.setOnKeyPressed(event ->
 		{
 			switch(event.getCode()) 
 			{
-				case LEFT : if(gameOver == false && !paused)
+				case LEFT : if(!gameOver && !paused)
 							{
 								player.setX(player.getX() - PLAYER_SPEED) ;
 							
@@ -153,7 +107,7 @@ public class Game extends Application
 
 						  	break ;
 
-				case RIGHT : if(gameOver == false && !paused)
+				case RIGHT : if(!gameOver && !paused)
 							 {
 							 	player.setX(player.getX() + PLAYER_SPEED) ;
 							
@@ -174,7 +128,7 @@ public class Game extends Application
 			if(event.getCode() == KeyCode.SPACE)
 			{	
 				// only after a second has passed since the player last shot is the player allowed to shoot again
-				if(gameOver == false &&  !paused && playerFireCount >= 1)
+				if(!gameOver &&  !paused && playerFireCount >= 1)
 				{
 					laserList.add(player.fire()) ;
 					playerFireCount = 0 ;
@@ -184,8 +138,55 @@ public class Game extends Application
 
 		play() ;
 
-		window.setScene(scene) ;
-		window.show() ;
+		primaryStage.setTitle("S P A C E   I N V A D E R S") ;
+		primaryStage.setResizable(false) ;
+		primaryStage.setScene(scene) ;
+		primaryStage.setOnCloseRequest(e -> {
+			Platform.exit();
+			System.exit(0);
+		});
+		primaryStage.show() ;
+	}
+
+	private void initialisePlayer() {
+		playerImage = new ImageView(new Image("/Pictures/Player.png")) ;
+		playerImage.setFitWidth(IMAGE_WIDTH) ;
+		playerImage.setFitHeight(IMAGE_HEIGHT) ;
+		playerImage.setCache(true) ;
+
+		player = new Spaceship(playerImage, 250, (MAP_HEIGHT - IMAGE_HEIGHT), root) ;
+		player.setName("PLAYER") ;
+		player.setHealth(5) ;
+
+		playerFireCount = 0 ;
+	}
+
+	private VBox initialiseGUIElements() {
+		scoreLabel = new Label("Your Score: " + score) ;
+		scoreLabel.setPrefHeight(20) ;
+		scoreLabel.setStyle("-fx-text-fill : white ;" +
+				"-fx-font-size : 11pt ;") ;
+
+		highScoreLabel = new Label("High Score: " + highScore) ;
+		highScoreLabel.setPrefHeight(20) ;
+		highScoreLabel.setStyle("-fx-text-fill : white ;" +
+				"-fx-font-size : 11pt ;") ;
+
+		HBox hbox = new HBox(250) ;
+		hbox.setStyle("-fx-background-color : black") ;
+		hbox.getChildren().addAll(scoreLabel, highScoreLabel) ;
+
+		healthLabel = new Label("Health: " + player.getHealth()) ;
+		healthLabel.setStyle("-fx-background-color : black ;" +
+				"-fx-border-color : darkgray ;" +
+				"-fx-text-fill : white ;" +
+				"-fx-font-size : 11pt ;") ;
+		healthLabel.setPrefWidth(MAP_WIDTH) ;
+
+		VBox vbox = new VBox() ;
+		vbox.getChildren().addAll(hbox, root, healthLabel) ;
+
+		return vbox;
 	}
 
 
@@ -258,7 +259,7 @@ public class Game extends Application
 
 									score+=10 ;
 
-									scoreLabel.setText("Your Score: " + Integer.toString(score)) ;
+									scoreLabel.setText("Your Score: " + score) ;
 									hit = true ;
 
 									if(enemyCount == 0)
@@ -290,7 +291,7 @@ public class Game extends Application
 											move() ;
 										}
 									} ;
-									moveTimer.scheduleAtFixedRate(moveTask, (long)(0), movePeriod) ;
+									moveTimer.scheduleAtFixedRate(moveTask, 0, movePeriod) ;
 
 									// decrease the enemies' fire period when there are 10 enemies. This will be the new fire period for the enemies 
 									if(enemyCount == 10)
@@ -306,7 +307,7 @@ public class Game extends Application
 												enemyFire() ;
 											}
 										} ;
-										enemyFireTimer.scheduleAtFixedRate(enemyFireTask, 0, (long)(1000*1)) ;	// will fire every 1 second now
+										enemyFireTimer.scheduleAtFixedRate(enemyFireTask, 0, 1000) ;	// will fire every 1 second now
 									}
 
 									break ;
@@ -324,12 +325,12 @@ public class Game extends Application
 						bonusSpaceship.destruct() ;
 						bonusSpaceship = null ;
 
-						if(enemyCount <= 15)	// when there less that 15 enemies remaining
+						if(enemyCount <= 15)	// when there less than 15 enemies remaining
 							score+=25 ;
 						else
 							score+=15 ;
 
-						scoreLabel.setText("Your Score: " + Integer.toString(score)) ;
+						scoreLabel.setText("Your Score: " + score) ;
 					}
 				}
 				else
@@ -342,7 +343,7 @@ public class Game extends Application
 						tempLaser.destroy() ;
 						laserList.remove(tempLaser) ;
 						player.setHealth(player.getHealth() - 1) ;
-						healthLabel.setText("Health: " + Integer.toString(player.getHealth())) ;
+						healthLabel.setText("Health: " + player.getHealth()) ;
 
 						if(player.getHealth() == 0)
 						{
@@ -384,16 +385,16 @@ public class Game extends Application
 			initializeTimerTasks() ;
 
 			moveTimer = new Timer() ;
-			moveTimer.scheduleAtFixedRate(moveTask, (long)(0), movePeriod) ;
+			moveTimer.scheduleAtFixedRate(moveTask, 0, movePeriod) ;
 								
 			enemyFireTimer = new Timer() ;
-			enemyFireTimer.scheduleAtFixedRate(enemyFireTask, (long)(0), (long)(1000*1.5)) ;
+			enemyFireTimer.scheduleAtFixedRate(enemyFireTask, 0, (long)(1000*1.5)) ;
 								
 			playerFireTimer = new Timer() ;
-			playerFireTimer.scheduleAtFixedRate(playerFireTask, (long)(0), (long)(1000*0.5)) ;
+			playerFireTimer.scheduleAtFixedRate(playerFireTask, 0, (long)(1000*0.5)) ;
 
 			bonusSpawnTimer = new Timer() ;
-			bonusSpawnTimer.scheduleAtFixedRate(bonusSpawnTask, (long)(1000*5), (long)(1000*15)) ;
+			bonusSpawnTimer.scheduleAtFixedRate(bonusSpawnTask, 1000*5, 1000*15) ;
 		}
 
 		paused = !paused ;
@@ -440,7 +441,7 @@ public class Game extends Application
 					{
 						double x ;
 
-						ImageView image_view = new ImageView(new Image("file:Enemy6.png")) ;
+						ImageView image_view = new ImageView(new Image("Pictures/Enemy6.png")) ;
 						image_view.setFitWidth(IMAGE_HEIGHT+5) ;
 						image_view.setFitHeight(IMAGE_HEIGHT+5) ;
 						image_view.setCache(true) ;
@@ -472,7 +473,7 @@ public class Game extends Application
 	{
 		Platform.runLater(() ->
 		{
-			Spaceship spaceship = null ;
+			Spaceship spaceship;
 			boolean moveDown = false ;
 			Controller controller ;
 
@@ -585,7 +586,7 @@ public class Game extends Application
 							if(num % 2 == 0) canFire = true ;
 						}
 
-						// check if there are no enemy spacechips in the way
+						// check if there are no enemy spaceships in the way
 						if(canFire)
 						{
 							if(row == MAX_ROW-1)
@@ -641,7 +642,7 @@ public class Game extends Application
 	{
 		ImageView image_view ;
 		Spaceship enemy ;
-		int num, row, col = 0;
+		int num, row, col;
 		double x, y ;
 
 		row = 0 ;
@@ -654,13 +655,13 @@ public class Game extends Application
 				num = (int)(Math.random() * 55) ;	// get a random integer from 0 to 55 inclusive
 				
 				if(num % 4 == 0)
-					image_view = new ImageView(new Image("file:Enemy4.png")) ;
+					image_view = new ImageView(new Image("/Pictures/Enemy4.png")) ;
 				else if(num % 3 == 0)
-					image_view = new ImageView(new Image("file:Enemy3.png")) ;
+					image_view = new ImageView(new Image("/Pictures/Enemy3.png")) ;
 				else if(num % 2 == 0)
-					image_view = new ImageView(new Image("file:Enemy2.png")) ;
+					image_view = new ImageView(new Image("/Pictures/Enemy2.png")) ;
 				else
-					image_view = new ImageView(new Image("file:Enemy1.png")) ;
+					image_view = new ImageView(new Image("/Pictures/Enemy1.png")) ;
 
 				image_view.setFitWidth(IMAGE_WIDTH) ;
 				image_view.setFitHeight(IMAGE_HEIGHT) ;
@@ -682,10 +683,10 @@ public class Game extends Application
 
 	private Integer getHighScore()
 	{
-		Scanner scan = null ;
+		Scanner scan;
 		String filePath, highScore ;
 
-		filePath = new File("").getAbsolutePath() ;		// get the path to this application's home foleder
+		filePath = new File("").getAbsolutePath() ;		// get the path to this application's home folder
 		highScore = "0" ;
 
 		try
@@ -714,24 +715,18 @@ public class Game extends Application
 	} 
 
 
-	private Boolean setHighScore(String high_score)
+	private void setHighScore(String high_score)
 	{
-		boolean done = false ;
-
 		try
 		{
 			FileWriter writer = new FileWriter("HighScore.txt") ;
 			writer.write(high_score) ;
 			writer.close() ;
-
-			done = true ;
-		}
+        }
 		catch(IOException ex) 
 		{
 			ex.printStackTrace() ;
 		}
-
-		return done ;
 	}
 
 
@@ -777,7 +772,7 @@ public class Game extends Application
 
 					Label lbl_2 = new Label() ;
 
-					if(status.toUpperCase().equals("LOST"))
+					if(status.equalsIgnoreCase("LOST"))
 					{
 						lbl_2.setText("YOU LOST") ;
 						lbl_2.setStyle("-fx-text-fill : white ;" +
@@ -829,30 +824,18 @@ public class Game extends Application
 						}
 
 						// get rid of all the lasers on screen
-						for(int index = 0 ; index < laserList.size() ; index++)
-						{
-							laserList.get(index).destroy() ;
-						}
+                        for (Laser laser : laserList) {
+                            laser.destroy();
+                        }
 						laserList.clear() ;
 
 						player.destruct() ;
-
-						playerFireCount = 0 ;
-
-						playerImage = new ImageView(new Image("file:Player.png")) ;
-						playerImage.setFitWidth(IMAGE_WIDTH) ;
-						playerImage.setFitHeight(IMAGE_HEIGHT) ;
-						playerImage.setCache(true) ;
-
-						player = new Spaceship(playerImage, 250, (MAP_HEIGHT - IMAGE_HEIGHT), root) ;
-						player.setName("PLAYER") ;
-						player.setHealth(5) ;
-
-						healthLabel.setText("Health: " + Integer.toString(player.getHealth())) ;
+						initialisePlayer();
 
 						score = 0 ;
-						scoreLabel.setText("Your Score: " + score) ;
 
+						healthLabel.setText("Health: " + player.getHealth()) ;
+						scoreLabel.setText("Your Score: " + score) ;
 						highScoreLabel.setText("High Score: " + highScore) ;
 
 						spawnEnemy() ;
@@ -862,16 +845,16 @@ public class Game extends Application
 						movePeriod = 240 ;
 
 						moveTimer = new Timer() ;
-						moveTimer.scheduleAtFixedRate(moveTask, (long)(0), movePeriod) ;	// executes task after a delay of 0 seconds and repeats every "movePeriod" milliseconds
+						moveTimer.scheduleAtFixedRate(moveTask, 0, movePeriod) ;	// executes task after a delay of 0 seconds and repeats every "movePeriod" milliseconds
 			
 						enemyFireTimer = new Timer() ;
-						enemyFireTimer.scheduleAtFixedRate(enemyFireTask, (long)(0), (long)(1000*1.5)) ;		// executes every 1.5 seconds - enemies fire every 2 seconds
+						enemyFireTimer.scheduleAtFixedRate(enemyFireTask, 0, (long)(1000*1.5)) ;		// executes every 1.5 seconds - enemies fire every 2 seconds
 		
 						playerFireTimer = new Timer() ;
-						playerFireTimer.scheduleAtFixedRate(playerFireTask, (long)(0), (long)(1000*0.5)) ; 	// executes every half second
+						playerFireTimer.scheduleAtFixedRate(playerFireTask, 0, (long)(1000*0.5)) ; 	// executes every half second
 
 						bonusSpawnTimer = new Timer() ;
-						bonusSpawnTimer.scheduleAtFixedRate(bonusSpawnTask, (long)(1000*15), (long)(1000*12)) ;
+						bonusSpawnTimer.scheduleAtFixedRate(bonusSpawnTask, 1000*15, 1000*12) ;
 
 						root.getChildren().remove(vbox) ;
 

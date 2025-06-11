@@ -6,8 +6,7 @@ public class Spaceship
 	private int health ;
 	private double x, y, width, height ;
 	private ImageView imageView ;
-	private Image image ;
-	private Pane pane ;
+    private Pane pane ;
 	private String name ;
 	private Boolean destroyed ;
 
@@ -147,8 +146,7 @@ public class Spaceship
 
 	public void setImage(Image tempImg)
 	{
-		this.image = tempImg ;
-		this.imageView = new ImageView(this.image) ;
+        this.imageView = new ImageView(tempImg) ;
 		this.pane.getChildren().add(imageView) ;
 	}
 }
