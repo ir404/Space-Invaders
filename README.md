@@ -15,7 +15,7 @@ By building this project I learnt a little about
 3. Clone this repository 
 4. Open the project directory in the terminal/command prompt
 5. Run the following command to compile the project:
-   1. `javac --module-path "C:\Program Files\Java\JavaFX\javafx-sdk-21.0.7\lib" --add-modules javafx.controls,javafx.graphics Gama.java`
+   1. `javac --module-path "C:\Program Files\Java\JavaFX\javafx-sdk-21.0.7\lib" --add-modules javafx.controls,javafx.graphics Game.java`
 6. Next, enter the following to run the program:
    1. `java --module-path "C:\Program Files\Java\JavaFX\javafx-sdk-21.0.7\lib" --add-modules javafx.controls,javafx.graphics --enable-native-access=javafx.graphics Game`
 7. Use the arrow keys to control your player, space to shoot and escape to pause/resume the game
